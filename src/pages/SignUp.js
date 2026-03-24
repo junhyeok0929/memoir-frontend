@@ -1,108 +1,80 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api';
-import { Button, TextField, Box, Typography, Grid } from '@mui/material';
+import { Typography, Box, TextField, Button, CircularProgress, Paper, Container } from '@mui/material';
 
 function SignUp() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [nickname, setNickname] = useState('');
-  const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [nickname, setNickname] = useState('');
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    const requestData = { email, password, nickname };
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        setLoading(true);
+        try {
+            await api.post('/api/members/signup', { email, password, nickname });
+            alert('회원가입이 완료되었습니다. 로그인해주세요! ✨');
+            navigate('/login');
+        } catch (error) {
+            console.error('회원가입 실패:', error);
+            alert('이미 존재하는 이메일이거나 입력 정보가 올바르지 않습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    try {
-      await api.post('/api/members/signup', requestData);
-      alert('회원가입에 성공했습니다! 🥳 \n로그인 페이지로 이동합니다.');
-      navigate('/login');
-    } catch (error) {
-      console.error('API 오류:', error);
-      alert('회원가입에 실패했습니다. 😭 \n' + (error.response?.data?.message || '입력 정보를 확인해주세요.'));
-    }
-  };
+    return (
+        <Box sx={{ 
+            minHeight: '100vh', bgcolor: '#fffdf5', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            p: 3 
+        }}>
+            <Container maxWidth="xs">
+                <Box sx={{ textAlign: 'center', mb: 4 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 900, color: '#451a03' }}>반가워요! 👋</Typography>
+                    <Typography variant="body2" sx={{ color: '#92400e', mt: 1 }}>새로운 추억을 기록할 준비가 되셨나요?</Typography>
+                </Box>
 
-  const neumorphicTextFieldSx = {
-    '& .MuiOutlinedInput-root': {
-        borderRadius: '8px',
-        boxShadow: 'inset 5px 5px 10px #bebebe, inset -5px -5px 10px #ffffff',
-        '& fieldset': {
-            border: 'none',
-        },
-    },
-    mb: 2
-  };
+                <Paper sx={{ p: 4, borderRadius: 6, boxShadow: '0 12px 40px rgba(251, 191, 36, 0.1)' }}>
+                    <Box component="form" onSubmit={handleSubmit}>
+                        <TextField
+                            label="닉네임" fullWidth required variant="standard"
+                            value={nickname} onChange={(e) => setNickname(e.target.value)}
+                            sx={{ mb: 3 }}
+                        />
+                        <TextField
+                            label="이메일" fullWidth required variant="standard"
+                            value={email} onChange={(e) => setEmail(e.target.value)}
+                            sx={{ mb: 3 }}
+                        />
+                        <TextField
+                            label="비밀번호" type="password" fullWidth required variant="standard"
+                            value={password} onChange={(e) => setPassword(e.target.value)}
+                            sx={{ mb: 4 }}
+                        />
+                        <Button 
+                            type="submit" variant="contained" fullWidth size="large" 
+                            disabled={loading}
+                            sx={{ py: 1.5, borderRadius: 3, fontWeight: 800, fontSize: '1rem' }}
+                        >
+                            {loading ? <CircularProgress size={24} color="inherit" /> : '시작하기'}
+                        </Button>
+                    </Box>
+                </Paper>
 
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        p: 3,
-      }}
-    >
-      <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
-        추억가계부 회원가입
-      </Typography>
-
-      <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-        <TextField
-          required
-          fullWidth
-          id="email"
-          label="이메일 주소"
-          name="email"
-          autoComplete="email"
-          autoFocus
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          sx={neumorphicTextFieldSx}
-        />
-        <TextField
-          required
-          fullWidth
-          name="password"
-          label="비밀번호"
-          type="password"
-          id="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          sx={neumorphicTextFieldSx}
-        />
-        <TextField
-          required
-          fullWidth
-          name="nickname"
-          label="닉네임"
-          type="text"
-          id="nickname"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          sx={neumorphicTextFieldSx}
-        />
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          sx={{ mt: 2, mb: 2 }}
-        >
-          가입하기
-        </Button>
-
-        <Grid container justifyContent="flex-end">
-          <Grid item>
-            <Link to="/login" style={{ color: '#333', textDecoration: 'none' }}>
-              {"이미 계정이 있으신가요? 로그인"}
-            </Link>
-          </Grid>
-        </Grid>
-      </Box>
-    </Box>
-  );
+                <Box sx={{ mt: 4, textAlign: 'center' }}>
+                    <Typography variant="body2" color="textSecondary">
+                        이미 계정이 있으신가요? {' '}
+                        <Link to="/login" style={{ color: '#fbbf24', fontWeight: 700, textDecoration: 'none' }}>
+                            로그인
+                        </Link>
+                    </Typography>
+                </Box>
+            </Container>
+        </Box>
+    );
 }
 
 export default SignUp;
