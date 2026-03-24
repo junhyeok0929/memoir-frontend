@@ -1,70 +1,31 @@
-# Getting Started with Create React App
+# ✨ 추억 가계부 (Memoir Frontend) - UI/UX
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+'추억 가계부' 서비스의 프론트엔드 애플리케이션입니다. **뉴모피즘(Neumorphism)** 디자인을 적용하여 독창적이고 세련된 사용자 경험을 제공합니다.
 
-## Available Scripts
+## 🎨 디자인 컨셉: 뉴모피즘
+- **Visual Identity:** 빛과 그림자를 활용한 입체감 있는 UI
+- **Styling:** Material-UI 기반의 커스텀 테마 (`theme.js`)
+- **Interactive:** 직관적인 버튼과 카드 디자인
 
-In the project directory, you can run:
+## 🛠 기술 스택
+- **Framework:** React 18.x
+- **UI Framework:** Material-UI (MUI) v5
+- **Communication:** Axios (with JWT Interceptors)
+- **Routing:** React Router DOM v6
 
-### `npm start`
+## ✨ 주요 기능
+- **통합 대시보드:** 현재 지출 내역 및 전체 거래 현황 제공
+- **반응형 거래 내역:** 입출금 내역을 리스트 및 카드로 확인
+- **JWT 자동 인증:** Axios 인터셉터를 활용한 편리한 인증 처리
+- **거래 및 일기 폼:** 직관적인 입력 방식과 유효성 검사
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## ⚙️ 실행 방법
+1. `npm install`을 실행하여 필요한 라이브러리를 설치합니다.
+2. `npm start` 명령어로 애플리케이션을 실행합니다.
+3. 브라우저에서 `http://localhost:3000`에 접속합니다.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 📂 프로젝트 구조
+- `src/pages`: 각각의 화면(로그인, 가입, 목록, 폼) 정의
+- `src/api.js`: 백엔드 서버와의 API 통신 설정 (Axios)
+- `src/theme.js`: 뉴모피즘 테마 및 스타일 정의
+- `src/App.js`: 라우팅 및 전역 상태 관리
