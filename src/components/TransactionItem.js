@@ -6,10 +6,11 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import api from '../api';
 
 function TransactionItem({ transaction, onDelete }) {
     const isIncome = transaction.type === 'INCOME';
-    const hasDiary = transaction.diaryContent && transaction.diaryContent.trim() !== '';
+    const hasDiary = (transaction.diaryContent && transaction.diaryContent.trim() !== '') || transaction.imageUrl;
 
     return (
         <motion.div
@@ -61,6 +62,32 @@ function TransactionItem({ transaction, onDelete }) {
                                 mt: 2, p: 2, bgcolor: '#fffdf5', borderRadius: '10px',
                                 border: '1px dashed #fde68a', position: 'relative'
                             }}>
+                                {/* 사진 표시 (폴라로이드 느낌 - 크기 최대화) */}
+                                {transaction.imageUrl && (
+                                    <Box sx={{ 
+                                        mb: 3, p: 1.5, pb: 6, bgcolor: 'white', 
+                                        boxShadow: '0 12px 30px rgba(0,0,0,0.12)',
+                                        borderRadius: '2px',
+                                        transform: 'rotate(-1deg)',
+                                        border: '1px solid #f0f0f0',
+                                        transition: 'all 0.4s ease',
+                                        '&:hover': { transform: 'rotate(0deg) scale(1.03)', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }
+                                    }}>
+                                        <img 
+                                            src={`${api.defaults.baseURL.replace(/\/$/, '')}/uploads/${transaction.imageUrl}`} 
+                                            alt="추억 사진" 
+                                            style={{ 
+                                                width: '100%', 
+                                                maxHeight: '500px', // 높이 제한을 대폭 늘림
+                                                objectFit: 'contain', // 사진이 잘리지 않도록 전체 표시
+                                                borderRadius: '2px', 
+                                                display: 'block',
+                                                backgroundColor: '#f9f9f9'
+                                            }} 
+                                        />
+                                    </Box>
+                                )}
+
                                 {transaction.diaryTitle && (
                                     <Typography variant="caption" sx={{ fontWeight: 800, mb: 0.5, color: '#b45309', display: 'block' }}>
                                         {transaction.diaryTitle}
@@ -76,10 +103,10 @@ function TransactionItem({ transaction, onDelete }) {
                         )}
                         
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1, gap: 0.5 }}>
-                            <IconButton component={Link} to={`/transactions/edit/${transaction.transactionId}`} size="small" sx={{ color: '#d1d5db', '&:hover': { color: '#fbbf24' } }}>
+                            <IconButton component={Link} to={`/transactions/edit/${transaction.id}`} size="small" sx={{ color: '#d1d5db', '&:hover': { color: '#fbbf24' } }}>
                                 <EditIcon fontSize="small" />
                             </IconButton>
-                            <IconButton onClick={() => onDelete(transaction.transactionId)} size="small" sx={{ color: '#d1d5db', '&:hover': { color: '#ef4444' } }}>
+                            <IconButton onClick={() => onDelete(transaction.id)} size="small" sx={{ color: '#d1d5db', '&:hover': { color: '#ef4444' } }}>
                                 <DeleteIcon fontSize="small" />
                             </IconButton>
                         </Box>

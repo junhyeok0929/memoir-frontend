@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import api from '../api';
 import { 
     Typography, Box, TextField, Button, CircularProgress, 
-    FormControl, InputLabel, Select, MenuItem, Divider, InputAdornment
+    FormControl, InputLabel, Select, MenuItem, Divider, InputAdornment, IconButton
 } from '@mui/material';
 import BookIcon from '@mui/icons-material/Book';
-
 import StarIcon from '@mui/icons-material/Star';
+import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 function TransactionForm() {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const fileInputRef = useRef(null);
     const isEditMode = id !== undefined;
 
     const [transactionDate, setTransactionDate] = useState('');
@@ -22,6 +24,11 @@ function TransactionForm() {
     const [diaryTitle, setDiaryTitle] = useState('');
     const [diaryContent, setDiaryContent] = useState('');
     const [loading, setLoading] = useState(isEditMode);
+
+    // 사진 관련 상태
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [existingImageUrl, setExistingImageUrl] = useState('');
 
     const expenseCategories = [
         '식비', '교통/차량', '여가생활', '마트/편의점', '패션/미용', 
@@ -44,6 +51,12 @@ function TransactionForm() {
                     setCategory(transaction.category);
                     setDiaryTitle(transaction.diaryTitle || '');
                     setDiaryContent(transaction.diaryContent || '');
+                    
+                    if (transaction.imageUrl) {
+                        setExistingImageUrl(transaction.imageUrl);
+                        // 백엔드의 WebConfig 설정에 맞게 경로 구성 (예: http://IP:8088/uploads/파일명)
+                        setImagePreview(`${api.defaults.baseURL}/uploads/${transaction.imageUrl}`);
+                    }
                 } catch (error) {
                     console.error("데이터 로드 실패:", error);
                     alert("정보를 불러오는데 실패했습니다.");
@@ -69,19 +82,39 @@ function TransactionForm() {
 
     const handleTypeChange = (e) => {
         setType(e.target.value);
-        setCategory(''); // 구분 변경 시 카테고리 초기화
+        setCategory(''); 
     };
 
-    // 금액 입력 시 콤마 처리 및 음수 차단
     const handleAmountChange = (e) => {
-        const value = e.target.value.replace(/[^0-9]/g, ''); // 숫자만 남김 (음수 차단)
+        const value = e.target.value.replace(/[^0-9]/g, '');
         setAmount(value);
     };
 
-    // 화면 표시용 콤마 포맷팅
     const formatAmount = (val) => {
         if (!val) return '';
         return parseInt(val, 10).toLocaleString();
+    };
+
+    // 사진 선택 핸들러
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setImageFile(null);
+        setImagePreview(null);
+        setExistingImageUrl('');
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
 
     const handleAddFavorite = async () => {
@@ -109,16 +142,32 @@ function TransactionForm() {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        const transactionData = { 
-            transactionDate, 
-            type, 
-            amount: parseInt(amount, 10), 
-            category, 
-            diaryTitle, 
-            diaryContent 
-        };
+        
+        let finalImageUrl = existingImageUrl;
 
         try {
+            // 1. 사진이 새로 선택되었다면 먼저 업로드
+            if (imageFile) {
+                const formData = new FormData();
+                formData.append('file', imageFile);
+                
+                const uploadRes = await api.post('/api/transactions/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                finalImageUrl = uploadRes.data; // 서버에서 저장된 파일명을 받아옴
+            }
+
+            // 2. 가계부 데이터 구성
+            const transactionData = { 
+                transactionDate, 
+                type, 
+                amount: parseInt(amount, 10), 
+                category, 
+                diaryTitle, 
+                diaryContent,
+                imageUrl: finalImageUrl // 사진 경로 추가
+            };
+
             if (isEditMode) {
                 await api.put(`/api/transactions/${id}`, transactionData);
                 alert('추억이 수정되었습니다. ✨');
@@ -129,21 +178,7 @@ function TransactionForm() {
             navigate('/', { state: { refresh: true } });
         } catch (error) {
             console.error("저장 실패 상세:", error);
-            let errorDetail = '';
-            
-            if (error.response) {
-                // 서버가 응답을 보낸 경우 (4xx, 5xx)
-                const status = error.response.status;
-                const data = error.response.data;
-                const message = typeof data === 'string' ? data : JSON.stringify(data);
-                errorDetail = `[상태코드: ${status}] 내용: ${message}`;
-            } else if (error.request) {
-                errorDetail = '서버로부터 응답을 받지 못했습니다. (네트워크/CORS 문제)';
-            } else {
-                errorDetail = error.message;
-            }
-            
-            alert(`저장 실패! ✨\n원인: ${errorDetail}\n(내용을 캡처해서 알려주시면 바로 해결 가능합니다!)`);
+            alert(`저장 실패! ✨`);
         }
     };
 
@@ -153,7 +188,7 @@ function TransactionForm() {
         p: 3, 
         borderRadius: 4, 
         mb: 3, 
-        bgcolor: 'rgba(255,255,255,0.6)', // 배경색과 어우러지는 반투명 흰색
+        bgcolor: 'rgba(255,255,255,0.6)',
         boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
         backdropFilter: 'blur(4px)',
         border: '1px solid rgba(255, 255, 255, 0.18)',
@@ -216,13 +251,64 @@ function TransactionForm() {
                     <BookIcon fontSize="small" color="primary" /> 추억 남기기
                 </Typography>
                 
-                <Box sx={{ ...sectionBoxSx, bgcolor: '#fffef5', border: '1px solid #f0ead6' }}> {/* 편지지 느낌 */}
+                <Box sx={{ ...sectionBoxSx, bgcolor: '#fffef5', border: '1px solid #f0ead6' }}>
                     <TextField
                         label="제목" fullWidth variant="standard"
                         value={diaryTitle} onChange={(e) => setDiaryTitle(e.target.value)}
                         placeholder="짧은 제목"
                         sx={{ mb: 2 }}
                     />
+                    
+                    {/* 사진 업로드 섹션 - 크기 다시 적정 수준으로 조정 */}
+                    <Box sx={{ mb: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                        {imagePreview ? (
+                            <Box sx={{ 
+                                position: 'relative', 
+                                width: '100%', 
+                                borderRadius: 2, 
+                                overflow: 'hidden', 
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                border: '2px solid #fff' 
+                            }}>
+                                <img src={imagePreview} alt="미리보기" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', display: 'block' }} />
+                                <IconButton 
+                                    onClick={handleRemoveImage}
+                                    sx={{ 
+                                        position: 'absolute', top: 8, right: 8, 
+                                        bgcolor: 'rgba(0,0,0,0.5)', color: 'white', 
+                                        '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' } 
+                                    }}
+                                    size="small"
+                                >
+                                    <DeleteIcon fontSize="small" />
+                                </IconButton>
+                            </Box>
+                        ) : (
+                            <Button
+                                variant="outlined"
+                                component="label"
+                                fullWidth
+                                startIcon={<AddPhotoAlternateIcon />}
+                                sx={{ 
+                                    borderStyle: 'dashed', 
+                                    py: 3, 
+                                    color: 'text.secondary', 
+                                    borderColor: '#d1d5db',
+                                    bgcolor: 'rgba(0,0,0,0.01)'
+                                }}
+                            >
+                                사진 추가하기
+                                <input
+                                    type="file"
+                                    hidden
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    ref={fileInputRef}
+                                />
+                            </Button>
+                        )}
+                    </Box>
+
                     <Divider sx={{ mb: 2, opacity: 0.5 }} />
                     <TextField
                         label="본문" fullWidth multiline rows={6} variant="standard"
