@@ -14,10 +14,16 @@ function Login({ onLoginSuccess }) {
         setLoading(true);
         try {
             const response = await api.post('/api/members/login', { email, password });
-            const token = response.data.token;
-            localStorage.setItem('token', token);
-            onLoginSuccess();
-            navigate('/');
+            // 백엔드 TokenResponseDto의 필드명인 'accessToken'으로 꺼냅니다.
+            const token = response.data.accessToken; 
+            
+            if (token) {
+                localStorage.setItem('token', token);
+                onLoginSuccess();
+                navigate('/');
+            } else {
+                alert('로그인에 실패했습니다. (토큰이 없습니다)');
+            }
         } catch (error) {
             console.error('로그인 실패:', error);
             alert('이메일 또는 비밀번호가 올바르지 않습니다.');
@@ -35,7 +41,7 @@ function Login({ onLoginSuccess }) {
             <Container maxWidth="xs">
                 <Box sx={{ textAlign: 'center', mb: 4 }}>
                     <Typography variant="h3" sx={{ fontWeight: 900, color: '#fbbf24', mb: 1 }}>✨</Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 900, color: '#451a03' }}>추억 기록장</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 900, color: '#451a03' }}>추억 가계부 📒</Typography>
                     <Typography variant="body2" sx={{ color: '#92400e', mt: 1 }}>오늘의 소중한 순간을 기록하세요</Typography>
                 </Box>
 

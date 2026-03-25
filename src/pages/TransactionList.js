@@ -3,107 +3,51 @@ import { Link } from 'react-router-dom';
 import api from '../api';
 import { 
     Typography, Box, CircularProgress, IconButton, Card, CardContent, 
-    Grid, Avatar, LinearProgress 
+    Grid, Avatar, LinearProgress, Popover, Button
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import moment from 'moment';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import TransactionItem from '../components/TransactionItem';
 
 const formatDate = (date) => moment(date).format('YYYY-MM-DD');
 const COLORS = ['#fbbf24', '#f87171', '#34d399', '#60a5fa', '#a78bfa', '#fb923c'];
 
-function TransactionItem({ transaction, onDelete }) {
-    const isIncome = transaction.type === 'INCOME';
-    const hasDiary = transaction.diaryContent && transaction.diaryContent.trim() !== '';
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            layout
-        >
-            <Box sx={{ mb: 2.5, px: 1 }}>
-                <Card sx={{ 
-                    border: '1px solid #fef3c7',
-                    borderRadius: 3, // 곡률을 더 세련되게 줄임
-                    boxShadow: '0 4px 12px rgba(251, 191, 36, 0.03)',
-                    '&:hover': { boxShadow: '0 8px 24px rgba(251, 191, 36, 0.08)' }
-                }}>
-                    <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Avatar sx={{ 
-                                bgcolor: isIncome ? '#ecfdf5' : '#fef2f2',
-                                color: isIncome ? '#059669' : '#dc2626',
-                                width: 48, height: 48,
-                                borderRadius: '10px'
-                            }}>
-                                {isIncome ? <TrendingUpIcon /> : <TrendingDownIcon />}
-                            </Avatar>
-                            
-                            <Box sx={{ flexGrow: 1 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Box>
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#451a03' }}>
-                                            {transaction.category}
-                                        </Typography>
-                                        <Typography variant="caption" sx={{ color: '#92400e', opacity: 0.6 }}>
-                                            {isIncome ? '수입' : '지출'}
-                                        </Typography>
-                                    </Box>
-                                    <Typography variant="subtitle1" sx={{ 
-                                        fontWeight: 900, 
-                                        color: isIncome ? '#059669' : '#dc2626'
-                                    }}>
-                                        {isIncome ? '+' : '-'}{transaction.amount.toLocaleString()}원
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Box>
-
-                        {hasDiary && (
-                            <Box sx={{ 
-                                mt: 2, p: 2, bgcolor: '#fffdf5', borderRadius: '10px',
-                                border: '1px dashed #fde68a', position: 'relative'
-                            }}>
-                                {transaction.diaryTitle && (
-                                    <Typography variant="caption" sx={{ fontWeight: 800, mb: 0.5, color: '#b45309', display: 'block' }}>
-                                        {transaction.diaryTitle}
-                                    </Typography>
-                                )}
-                                <Typography variant="body2" sx={{ color: '#78350f', lineHeight: 1.6, fontSize: '0.875rem' }}>
-                                    {transaction.diaryContent}
-                                </Typography>
-                            </Box>
-                        )}
-                        
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1, gap: 0.5 }}>
-                            <IconButton component={Link} to={`/transactions/edit/${transaction.transactionId}`} size="small" sx={{ color: '#d1d5db', '&:hover': { color: '#fbbf24' } }}>
-                                <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton onClick={() => onDelete(transaction.transactionId)} size="small" sx={{ color: '#d1d5db', '&:hover': { color: '#ef4444' } }}>
-                                <DeleteIcon fontSize="small" />
-                            </IconButton>
-                        </Box>
-                    </CardContent>
-                </Card>
-            </Box>
-        </motion.div>
-    );
-}
-
-function TransactionList() {
-    const [currentDate, setCurrentDate] = useState(new Date());
+function TransactionList({ currentDate, setCurrentDate }) {
     const [transactions, setTransactions] = useState([]);
     const [summary, setSummary] = useState({ income: 0, expense: 0 });
     const [loading, setLoading] = useState(true);
     const [budget, setBudget] = useState(1000000); 
+
+    const [dateAnchorEl, setDateAnchorEl] = useState(null);
+
+    const handleDateClick = (event) => {
+        setDateAnchorEl(event.currentTarget);
+    };
+
+    const handleDateClose = () => {
+        setDateAnchorEl(null);
+    };
+
+    const handleMonthSelect = (month) => {
+        const nextDate = moment(currentDate).month(month).toDate();
+        setCurrentDate(nextDate);
+        handleDateClose();
+    };
+
+    const handleYearSelect = (year) => {
+        const nextDate = moment(currentDate).year(year).toDate();
+        setCurrentDate(nextDate);
+    };
+
+    const openDatePopover = Boolean(dateAnchorEl);
+    const id = openDatePopover ? 'date-popover' : undefined;
+
+    const currentYear = currentDate.getFullYear();
+    const years = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
+    const months = Array.from({ length: 12 }, (_, i) => i);
 
     const expensePercent = Math.min(Math.round((summary.expense / budget) * 100), 100);
 
@@ -164,8 +108,19 @@ function TransactionList() {
         <Box sx={{ p: 0, position: 'relative', minHeight: '100%' }}>
             <Box sx={{ p: 4, pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box>
-                    <Typography variant="h5" sx={{ color: '#451a03', fontWeight: 900 }}>추억 기록장 ✨</Typography>
-                    <Typography variant="subtitle2" sx={{ color: '#92400e', opacity: 0.7 }}>{moment(currentDate).format('YYYY. MM')}</Typography>
+                    <Typography variant="h5" sx={{ color: '#451a03', fontWeight: 900 }}>추억 가계부 📒</Typography>
+                    <Typography 
+                        variant="subtitle2" 
+                        onClick={handleDateClick}
+                        sx={{ 
+                            color: '#92400e', opacity: 0.8, cursor: 'pointer',
+                            display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                            '&:hover': { color: '#fbbf24', opacity: 1 },
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        {moment(currentDate).format('YYYY. MM')} ✨
+                    </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     <IconButton onClick={() => setCurrentDate(moment(currentDate).subtract(1, 'month').toDate())} size="small" sx={{ border: '1px solid #fde68a' }}>
@@ -177,13 +132,61 @@ function TransactionList() {
                 </Box>
             </Box>
 
-            {/* 대시보드: 곡률을 3으로 줄이고 패딩을 늘려 답답함 해소 */}
+            <Popover
+                id={id}
+                open={openDatePopover}
+                anchorEl={dateAnchorEl}
+                onClose={handleDateClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                PaperProps={{
+                    sx: { 
+                        p: 2, borderRadius: 4, width: 280, 
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.1)', border: '1px solid #fef3c7' 
+                    }
+                }}
+            >
+                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center', gap: 1, borderBottom: '1px solid #fef3c7', pb: 1 }}>
+                    {years.map(year => (
+                        <Button 
+                            key={year} 
+                            size="small"
+                            onClick={() => handleYearSelect(year)}
+                            sx={{ 
+                                minWidth: 60, fontWeight: year === currentYear ? 900 : 500,
+                                color: year === currentYear ? '#fbbf24' : '#92400e',
+                                bgcolor: year === currentYear ? '#fffdf5' : 'transparent'
+                            }}
+                        >
+                            {year}
+                        </Button>
+                    ))}
+                </Box>
+                <Grid container spacing={1}>
+                    {months.map(m => (
+                        <Grid item xs={3} key={m}>
+                            <Button
+                                fullWidth
+                                onClick={() => handleMonthSelect(m)}
+                                sx={{ 
+                                    py: 1, borderRadius: 2, fontSize: '0.8rem', fontWeight: m === currentDate.getMonth() ? 900 : 500,
+                                    color: m === currentDate.getMonth() ? '#fbbf24' : '#6b7280',
+                                    bgcolor: m === currentDate.getMonth() ? '#fffdf5' : 'transparent',
+                                    '&:hover': { bgcolor: '#fffbeb' }
+                                }}
+                            >
+                                {m + 1}월
+                            </Button>
+                        </Grid>
+                    ))}
+                </Grid>
+            </Popover>
+
             <Box sx={{ px: 3, mb: 4 }}>
                 <Card sx={{ 
                     background: 'linear-gradient(135deg, #fbbf24 0%, #fcd34d 100%)', 
-                    p: 1.5, // 패딩 증가
+                    p: 1.5, 
                     border: 'none', 
-                    borderRadius: 4, // 곡률 감소 (더 날렵해짐)
+                    borderRadius: 4,
                     boxShadow: '0 15px 35px rgba(251, 191, 36, 0.25)' 
                 }}>
                     <CardContent>
@@ -226,7 +229,6 @@ function TransactionList() {
                 </Card>
             </Box>
 
-            {/* 소비 리포트 */}
             {pieData.length > 0 && (
                 <Box sx={{ px: 4, mb: 4 }}>
                     <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 900, color: '#451a03' }}>소비 요약</Typography>
@@ -252,7 +254,6 @@ function TransactionList() {
                 </Box>
             )}
 
-            {/* 활동 내역 */}
             <Box sx={{ px: 3, pb: 15 }}>
                 <Typography variant="subtitle2" sx={{ mb: 2, px: 1, fontWeight: 900, color: '#451a03' }}>최근 기록</Typography>
                 {loading ? (

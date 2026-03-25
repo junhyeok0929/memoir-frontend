@@ -7,6 +7,8 @@ import {
 } from '@mui/material';
 import BookIcon from '@mui/icons-material/Book';
 
+import StarIcon from '@mui/icons-material/Star';
+
 function TransactionForm() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -21,9 +23,13 @@ function TransactionForm() {
     const [diaryContent, setDiaryContent] = useState('');
     const [loading, setLoading] = useState(isEditMode);
 
-    const categories = [
+    const expenseCategories = [
         '식비', '교통/차량', '여가생활', '마트/편의점', '패션/미용', 
         '생활비', '통신', '건강', '교육', '경조사/회비', '부모님', '기타'
+    ];
+
+    const incomeCategories = [
+        '월급', '부수입', '용돈', '상여', '금융소득', '기타'
     ];
 
     useEffect(() => {
@@ -50,9 +56,21 @@ function TransactionForm() {
         } else {
             const queryParams = new URLSearchParams(location.search);
             const dateFromUrl = queryParams.get('date');
+            const categoryFromUrl = queryParams.get('category');
+            const amountFromUrl = queryParams.get('amount');
+            const typeFromUrl = queryParams.get('type');
+
             setTransactionDate(dateFromUrl || new Date().toISOString().slice(0, 10));
+            if (categoryFromUrl) setCategory(categoryFromUrl);
+            if (amountFromUrl) setAmount(amountFromUrl);
+            if (typeFromUrl) setType(typeFromUrl);
         }
     }, [id, isEditMode, navigate, location.search]);
+
+    const handleTypeChange = (e) => {
+        setType(e.target.value);
+        setCategory(''); // 구분 변경 시 카테고리 초기화
+    };
 
     // 금액 입력 시 콤마 처리 및 음수 차단
     const handleAmountChange = (e) => {
@@ -64,6 +82,29 @@ function TransactionForm() {
     const formatAmount = (val) => {
         if (!val) return '';
         return parseInt(val, 10).toLocaleString();
+    };
+
+    const handleAddFavorite = async () => {
+        if (!amount || !category) {
+            alert('금액과 카테고리를 입력해주세요.');
+            return;
+        }
+
+        const templateName = window.prompt('즐겨찾기 이름을 입력해주세요 (예: 스타벅스 커피)');
+        if (!templateName) return;
+
+        try {
+            await api.post('/api/favorites', {
+                templateName,
+                type,
+                amount: parseInt(amount, 10),
+                category
+            });
+            alert('즐겨찾기에 추가되었습니다! ⭐');
+        } catch (error) {
+            console.error("즐겨찾기 추가 실패:", error);
+            alert('즐겨찾기 추가에 실패했습니다.');
+        }
     };
 
     const handleSubmit = async (event) => {
@@ -87,8 +128,22 @@ function TransactionForm() {
             }
             navigate('/', { state: { refresh: true } });
         } catch (error) {
-            console.error("저장 실패:", error);
-            alert('저장에 실패했습니다. 내용을 확인해주세요.');
+            console.error("저장 실패 상세:", error);
+            let errorDetail = '';
+            
+            if (error.response) {
+                // 서버가 응답을 보낸 경우 (4xx, 5xx)
+                const status = error.response.status;
+                const data = error.response.data;
+                const message = typeof data === 'string' ? data : JSON.stringify(data);
+                errorDetail = `[상태코드: ${status}] 내용: ${message}`;
+            } else if (error.request) {
+                errorDetail = '서버로부터 응답을 받지 못했습니다. (네트워크/CORS 문제)';
+            } else {
+                errorDetail = error.message;
+            }
+            
+            alert(`저장 실패! ✨\n원인: ${errorDetail}\n(내용을 캡처해서 알려주시면 바로 해결 가능합니다!)`);
         }
     };
 
@@ -106,9 +161,20 @@ function TransactionForm() {
 
     return (
         <Box sx={{ p: 3, maxWidth: 500, margin: '0 auto', minHeight: '100vh', bgcolor: '#f8f9fa' }}>
-            <Typography variant="h5" sx={{ mb: 4, fontWeight: 800, textAlign: 'left', color: '#1a1a1a' }}>
-                {isEditMode ? '기록 수정' : '오늘의 기록'}
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a1a' }}>
+                    {isEditMode ? '기록 수정' : '오늘의 기록'}
+                </Typography>
+                {!isEditMode && (
+                    <Button 
+                        startIcon={<StarIcon />} 
+                        onClick={handleAddFavorite}
+                        sx={{ color: '#fbbf24', fontWeight: 700 }}
+                    >
+                        즐겨찾기 추가
+                    </Button>
+                )}
+            </Box>
             
             <Box component="form" onSubmit={handleSubmit}>
                 <Box sx={sectionBoxSx}>
@@ -122,7 +188,7 @@ function TransactionForm() {
                     <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
                         <FormControl fullWidth variant="standard">
                             <InputLabel>구분</InputLabel>
-                            <Select value={type} label="구분" onChange={(e) => setType(e.target.value)}>
+                            <Select value={type} label="구분" onChange={handleTypeChange}>
                                 <MenuItem value="INCOME">수입</MenuItem>
                                 <MenuItem value="EXPENSE">지출</MenuItem>
                             </Select>
@@ -130,7 +196,9 @@ function TransactionForm() {
                         <FormControl fullWidth required variant="standard">
                             <InputLabel>카테고리</InputLabel>
                             <Select value={category} label="카테고리" onChange={(e) => setCategory(e.target.value)}>
-                                {categories.map((cat) => <MenuItem key={cat} value={cat}>{cat}</MenuItem>)}
+                                {(type === 'INCOME' ? incomeCategories : expenseCategories).map((cat) => (
+                                    <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                                ))}
                             </Select>
                         </FormControl>
                     </Box>
