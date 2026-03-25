@@ -27,6 +27,24 @@ body {
   transition: all 0.8s ease; /* 계절 변화 시 부드러운 전환 */
 }
 
+/* 모바일 대응: 화면 너비가 500px 이하인 경우 프레임 제거 */
+@media screen and (max-width: 500px) {
+  body {
+    display: block;
+    height: auto;
+  }
+  .iphone-x {
+    width: 100%;
+    height: 100vh;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .iphone-x-top {
+    display: none; /* 모바일에서는 노치 디자인 숨김 */
+  }
+}
+
 /* 계절별 테마 스타일 */
 .App.spring .iphone-x { border-color: #fca5a5; box-shadow: 0 50px 100px rgba(252, 165, 165, 0.2); }
 .App.summer .iphone-x { border-color: #7dd3fc; box-shadow: 0 50px 100px rgba(125, 211, 252, 0.2); }

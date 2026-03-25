@@ -24,8 +24,15 @@ function App() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
-  }, []);
+    const loggedIn = !!token;
+    setIsLoggedIn(loggedIn);
+
+    // 현재 경로가 로그인이나 회원가입이 아니면서 로그인이 안 된 경우 로그인 페이지로 이동
+    const path = window.location.pathname;
+    if (!loggedIn && path !== '/login' && path !== '/signup') {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   const onLoginSuccess = () => {
     setIsLoggedIn(true);
