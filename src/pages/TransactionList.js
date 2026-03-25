@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../api';
 import { 
     Typography, Box, CircularProgress, IconButton, Card, CardContent, 
-    Grid, Avatar, LinearProgress, Popover, Button
+    Grid, Avatar, LinearProgress, Popover, Button, TextField
 } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -20,6 +20,22 @@ function TransactionList({ currentDate, setCurrentDate }) {
     const [summary, setSummary] = useState({ income: 0, expense: 0 });
     const [loading, setLoading] = useState(true);
     const [budget, setBudget] = useState(1000000); 
+    const [budgetAnchorEl, setBudgetAnchorEl] = useState(null);
+    const [tempBudget, setTempBudget] = useState(budget);
+
+    const handleBudgetClick = (event) => {
+        setTempBudget(budget);
+        setBudgetAnchorEl(event.currentTarget);
+    };
+
+    const handleBudgetClose = () => {
+        setBudgetAnchorEl(null);
+    };
+
+    const handleBudgetSubmit = () => {
+        setBudget(tempBudget);
+        handleBudgetClose();
+    };
 
     const [dateAnchorEl, setDateAnchorEl] = useState(null);
 
@@ -190,30 +206,85 @@ function TransactionList({ currentDate, setCurrentDate }) {
                     boxShadow: '0 15px 35px rgba(251, 191, 36, 0.25)' 
                 }}>
                     <CardContent>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                            <Box>
-                                <Typography variant="caption" sx={{ color: '#92400e', fontWeight: 700, opacity: 0.8 }}>나의 자산 추억</Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 900, color: '#451a03', mt: 0.5 }}>{(summary.income - summary.expense).toLocaleString()}원</Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, gap: 4 }}>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography variant="caption" sx={{ color: '#92400e', fontWeight: 800, opacity: 0.9, whiteSpace: 'nowrap', display: 'block', fontSize: '0.85rem' }}>나의 자산 추억</Typography>
+                                {(() => {
+                                    const balance = (summary?.income || 0) - (summary?.expense || 0);
+                                    const balanceStr = balance.toLocaleString() + '원';
+                                    const isLong = balanceStr.length > 10;
+                                    return (
+                                        <Typography sx={{ 
+                                            fontWeight: 900, color: '#451a03', mt: 0.5, whiteSpace: 'nowrap',
+                                            fontSize: { 
+                                                xs: isLong ? '1.3rem' : '1.6rem', 
+                                                md: isLong ? '1.7rem' : '2.1rem' 
+                                            },
+                                            letterSpacing: '-0.05em', lineHeight: 1.1
+                                        }}>
+                                            {balanceStr}
+                                        </Typography>
+                                    );
+                                })()}
                             </Box>
-                            <Box sx={{ textAlign: 'right' }}>
-                                <Typography variant="caption" sx={{ color: '#92400e', fontWeight: 700, opacity: 0.8 }}>예산 사용량</Typography>
-                                <Typography variant="h6" sx={{ fontWeight: 900, color: expensePercent > 80 ? '#991b1b' : '#065f46' }}>{expensePercent}%</Typography>
+                            <Box sx={{ textAlign: 'right', flexShrink: 0, ml: 1 }}>
+                                <Typography variant="caption" sx={{ color: '#92400e', fontWeight: 800, opacity: 0.9, whiteSpace: 'nowrap', display: 'block', fontSize: '0.85rem' }}>예산 사용량</Typography>
+                                <Typography sx={{ 
+                                    fontWeight: 900, 
+                                    color: expensePercent > 80 ? '#991b1b' : '#065f46',
+                                    whiteSpace: 'nowrap',
+                                    fontSize: { xs: '1.1rem', md: '1.4rem' },
+                                    lineHeight: 1.1
+                                }}>
+                                    {expensePercent}%
+                                </Typography>
                             </Box>
                         </Box>
 
-                        <Box sx={{ mt: 2, mb: 1.5 }}>
+                        <Box sx={{ mt: 1.5, mb: 1.5 }}>
                             <LinearProgress 
                                 variant="determinate" 
                                 value={expensePercent} 
                                 sx={{ 
-                                    height: 12, borderRadius: 6, bgcolor: 'rgba(255,255,255,0.3)',
-                                    '& .MuiLinearProgress-bar': { bgcolor: expensePercent > 80 ? '#ef4444' : '#065f46' } 
+                                    height: 8, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.3)',
+                                    '& .MuiLinearProgress-bar': { bgcolor: expensePercent > 80 ? '#ef4444' : '#065f46', borderRadius: 4 } 
                                 }} 
                             />
                         </Box>
-                        <Typography variant="caption" sx={{ color: '#92400e', fontWeight: 700 }}>
-                            목표 {budget.toLocaleString()}원 중 {summary.expense.toLocaleString()}원 지출
+                        <Typography 
+                            variant="caption" 
+                            onClick={handleBudgetClick}
+                            sx={{ color: '#92400e', fontWeight: 800, cursor: 'pointer', '&:hover': { opacity: 0.7 } }}
+                        >
+                            목표 {(budget || 0).toLocaleString()}원 중 {(summary?.expense || 0).toLocaleString()}원 지출
                         </Typography>
+
+                        <Popover
+                            open={Boolean(budgetAnchorEl)}
+                            anchorEl={budgetAnchorEl}
+                            onClose={handleBudgetClose}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                            PaperProps={{ sx: { p: 2, borderRadius: 3, width: 220, boxShadow: '0 8px 30px rgba(0,0,0,0.1)' } }}
+                        >
+                            <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700 }}>월 목표 예산 설정</Typography>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                type="number"
+                                value={tempBudget}
+                                onChange={(e) => setTempBudget(e.target.value)}
+                                InputProps={{ endAdornment: <Typography variant="caption">원</Typography> }}
+                                sx={{ mb: 2 }}
+                            />
+                            <Button 
+                                fullWidth 
+                                variant="contained" 
+                                onClick={handleBudgetSubmit}
+                                sx={{ bgcolor: '#fbbf24', '&:hover': { bgcolor: '#f59e0b' }, fontWeight: 700 }}
+                            >
+                                설정하기
+                            </Button>
+                        </Popover>
 
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
                             <Box sx={{ bgcolor: 'rgba(255,255,255,0.4)', p: 2, borderRadius: 2, flexGrow: 1, mr: 1.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -242,13 +313,18 @@ function TransactionList({ currentDate, setCurrentDate }) {
                             </PieChart>
                         </ResponsiveContainer>
                         <Box sx={{ width: '50%', pl: 2 }}>
-                            {pieData.slice(0, 3).map((item, idx) => (
-                                <Box key={idx} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                    <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: COLORS[idx], mr: 1 }} />
-                                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#666', flexGrow: 1 }}>{item.name}</Typography>
-                                    <Typography variant="caption" sx={{ fontWeight: 800 }}>{((item.value / summary.expense) * 100).toFixed(0)}%</Typography>
-                                </Box>
-                            ))}
+                            {(() => {
+                                const totalPieValue = pieData.reduce((acc, cur) => acc + cur.value, 0);
+                                return pieData.slice(0, 3).map((item, idx) => (
+                                    <Box key={idx} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                        <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: COLORS[idx], mr: 1 }} />
+                                        <Typography variant="caption" sx={{ fontWeight: 700, color: '#666', flexGrow: 1 }}>{item.name}</Typography>
+                                        <Typography variant="caption" sx={{ fontWeight: 800 }}>
+                                            {totalPieValue > 0 ? ((item.value / totalPieValue) * 100).toFixed(1) : 0}%
+                                        </Typography>
+                                    </Box>
+                                ));
+                            })()}
                         </Box>
                     </Box>
                 </Box>

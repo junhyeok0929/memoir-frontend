@@ -160,7 +160,7 @@ function TransactionForm() {
     };
 
     return (
-        <Box sx={{ p: 3, maxWidth: 500, margin: '0 auto', minHeight: '100vh', bgcolor: '#f8f9fa' }}>
+        <Box sx={{ p: 3, pb: 12, maxWidth: 500, margin: '0 auto', minHeight: '100vh', bgcolor: '#f8f9fa' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                 <Typography variant="h5" sx={{ fontWeight: 800, color: '#1a1a1a' }}>
                     {isEditMode ? '기록 수정' : '오늘의 기록'}
